@@ -3,9 +3,16 @@ from asyncio.events import get_event_loop
 from concurrent.futures.thread import ThreadPoolExecutor
 from enum import Enum, auto
 from queue import PriorityQueue
-from typing import Any, Container, Tuple, TypeVar, Union
+from typing import Any, Tuple, TypeVar, Union
 
-from cmdq.base import Command, CommandHandle, CommandProcessor, CommandProcessorHandle, logevent
+from cmdq.base import (
+    Command,
+    CommandHandle,
+    CommandProcessor,
+    CommandProcessorHandle,
+    Tags,
+    logevent,
+)
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -20,7 +27,7 @@ class _ControlCommandHandle(CommandHandle[_Control, None]):
     pass
 
 
-class CmdProcessor(CommandProcessor[T, U]):
+class Processor(CommandProcessor[T, U]):
     _Entry = Union[
         Tuple[CommandHandle[T, Any], Command[T, U, Any]], Tuple[CommandHandle[_Control, None], Any]
     ]
@@ -29,7 +36,7 @@ class CmdProcessor(CommandProcessor[T, U]):
         self._name = name
         self._cxt = cxt
         self._entry = 1
-        self._q: PriorityQueue[CmdProcessor._Entry] = PriorityQueue()
+        self._q: PriorityQueue[Processor._Entry] = PriorityQueue()
         self._qevent = threading.Event()
         self._qexecutor = ThreadPoolExecutor(thread_name_prefix=name)
         self._qtask = get_event_loop().run_in_executor(self._qexecutor, self._consume)
@@ -58,9 +65,7 @@ class CmdProcessor(CommandProcessor[T, U]):
         self._qexecutor.shutdown(wait=True)
         logevent("XXXX", self)
 
-    def send(
-        self, cmd: Command[T, U, V], pri: int = 50, tags: Container[Any] = ()
-    ) -> CommandHandle[T, V]:
+    def send(self, cmd: Command[T, U, V], pri: int = 50, tags: Tags = ()) -> CommandHandle[T, V]:
         hcmd = cmd.get_handle(pri, self._entry, tags)
         self._entry += 1
         self._q.put((hcmd, cmd))
@@ -86,10 +91,10 @@ class CmdProcessor(CommandProcessor[T, U]):
                 self._q.task_done()
 
     def __repr__(self) -> str:
-        return f"""<CmdProcessor '{self._name}' entries={self._entry} at {id(self)}"""
+        return f"""<Processor '{self._name}' entries={self._entry} at {id(self)}"""
 
 
-class ProcHandle(CommandProcessorHandle[T, U]):
+class ProcessorHandle(CommandProcessorHandle[T, U]):
     @classmethod
     def factory(cls, cxt: U) -> CommandProcessor[T, U]:
-        return CmdProcessor("Cmd", cxt)
+        return Processor("Cmd", cxt)

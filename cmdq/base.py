@@ -24,6 +24,8 @@ Tcmdid = TypeVar("Tcmdid")
 Tcxt = TypeVar("Tcxt")
 Tres = TypeVar("Tres")
 
+Tags = Container[Any]
+
 _logger = logging.getLogger(__name__)
 _startime = time.time()
 
@@ -35,7 +37,7 @@ def logevent(evt: str, msg: Any, detail: Any = None) -> None:
 
 
 class ErrorCallback(Protocol):
-    def __call__(self, ex: Exception, tags: Container[Any] = []) -> Optional[bool]:
+    def __call__(self, ex: Exception, tags: Tags = []) -> Optional[bool]:
         return True  # also raise
 
 
@@ -44,12 +46,12 @@ class _DefaultErrorCallback(ErrorCallback):
 
 
 class CommandHandle(Generic[Tcmdid, Tres]):
-    _ResultCallback = Callable[[Tres, Container[Any]], Optional[Any]]
+    _ResultCallback = Callable[[Tres, Tags], Optional[Any]]
 
     onresult: Optional[_ResultCallback] = None
     onerror: ErrorCallback = _DefaultErrorCallback()
 
-    def __init__(self, pri: int, entry: int, cmdid: Tcmdid, tags: Container[Any] = []) -> None:
+    def __init__(self, pri: int, entry: int, cmdid: Tcmdid, tags: Tags = []) -> None:
         self.pri = pri
         self.entry = entry
         self.cmdid = cmdid
@@ -86,7 +88,7 @@ class Command(Protocol[Tcmdid, Tcxt, Tres]):
                 raise CmdProcError(ex) from ex
 
     @classmethod
-    def get_handle(cls, pri: int, entry: int, tags: Container[Any]) -> CommandHandle[Tcmdid, Tres]:
+    def get_handle(cls, pri: int, entry: int, tags: Tags) -> CommandHandle[Tcmdid, Tres]:
         return CommandHandle(pri, entry, cls.cmdId, tags)
 
     @abstractmethod
@@ -121,14 +123,14 @@ class CommandProcessor(Protocol[Tcmdid, Tcxt]):
         """Blocks until all currently queued commands are processed."""
 
     def send(
-        self, cmd: Command[Tcmdid, Tcxt, Tres], pri: int = 50, tags: Container[Any] = ()
+        self, cmd: Command[Tcmdid, Tcxt, Tres], pri: int = 50, tags: Tags = ()
     ) -> CommandHandle[Tcmdid, Tres]:
         """Send a commands to the queued for processing
 
         Args:
             cmd (Command[Tcmdid, Tcxt, Any]): The command.
             pri (int, optional): The command priority. Lower priorities are processed first. Defaults to 50.
-            tags (Container[Any], optional): A collection of tags for use by the consumer. Defaults to ().
+            tags (Tags, optional): A collection of tags for use by the consumer. Defaults to ().
 
         Returns:
             CommandHandle[Tcmdid, Any]: A handle that represents the command.
