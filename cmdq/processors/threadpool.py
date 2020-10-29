@@ -54,6 +54,7 @@ class Processor(CommandProcessor[T, U]):
     def join(self) -> None:
         logevent("JOIN", f"""{self} +{self._q.qsize()}+""")
         self._q.join()
+        logevent("---", self)
 
     def halt(self) -> None:
         logevent("HALT", self)
@@ -91,7 +92,7 @@ class Processor(CommandProcessor[T, U]):
                 self._q.task_done()
 
     def __repr__(self) -> str:
-        return f"""<Processor '{self._name}' entries={self._entry} at {id(self)}"""
+        return f"""<Processor '{self._name}' total_entries={self._entry - 1} at {id(self)}"""
 
 
 class ProcessorHandle(CommandProcessorHandle[T, U]):
