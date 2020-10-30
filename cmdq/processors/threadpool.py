@@ -1,5 +1,4 @@
 import threading
-from asyncio.events import get_event_loop
 from concurrent.futures.thread import ThreadPoolExecutor
 from enum import Enum, auto
 from queue import PriorityQueue
@@ -39,7 +38,7 @@ class Processor(CommandProcessor[T, U]):
         self._q: PriorityQueue[Processor._Entry] = PriorityQueue()
         self._qevent = threading.Event()
         self._qexecutor = ThreadPoolExecutor(thread_name_prefix=name)
-        self._qtask = get_event_loop().run_in_executor(self._qexecutor, self._consume)
+        self._qtask = self._qexecutor.submit(self._consume)
 
     def start(self) -> None:
         logevent("START", self)
@@ -54,20 +53,20 @@ class Processor(CommandProcessor[T, U]):
     def join(self) -> None:
         logevent("JOIN", f"""{self} +{self._q.qsize()}+""")
         self._q.join()
-        logevent("---", self)
+        logevent("----", self)
 
     def halt(self) -> None:
         logevent("HALT", self)
         hcmd = _ControlCommandHandle(0, 0, _Control.BREAK)
         self._q.put((hcmd, _Control.BREAK))
-        if not self.paused():
+        if self.paused():
             self.start()
 
         self._qexecutor.shutdown(wait=True)
         logevent("XXXX", self)
 
     def send(self, cmd: Command[T, U, V], pri: int = 50, tags: Tags = ()) -> CommandHandle[T, V]:
-        hcmd = cmd.get_handle(pri, self._entry, tags)
+        hcmd = cmd.get_handle(pri, self._entry, tags, self._name)
         self._entry += 1
         self._q.put((hcmd, cmd))
         logevent("RCVD", hcmd)
@@ -92,7 +91,7 @@ class Processor(CommandProcessor[T, U]):
                 self._q.task_done()
 
     def __repr__(self) -> str:
-        return f"""<Processor '{self._name}' total_entries={self._entry - 1} at {id(self)}"""
+        return f"""<Processor '{self._name}' total_entries={self._entry - 1} at {id(self)}>"""
 
 
 class ProcessorHandle(CommandProcessorHandle[T, U]):

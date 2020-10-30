@@ -31,7 +31,7 @@ _startime = time.time()
 
 
 def logevent(evt: str, msg: Any, detail: Any = None) -> None:
-    _logger.info(f"""{evt:5} +{(time.time() - _startime):010.4f}s {msg}""")
+    _logger.info(f"""[+{(time.time() - _startime):010.4f}s] {evt:5} {msg}""")
     if detail:
         _logger.info(f"""\t\t{detail}""")
 
@@ -51,11 +51,14 @@ class CommandHandle(Generic[Tcmdid, Tres]):
     onresult: Optional[_ResultCallback] = None
     onerror: ErrorCallback = _DefaultErrorCallback()
 
-    def __init__(self, pri: int, entry: int, cmdid: Tcmdid, tags: Tags = []) -> None:
+    def __init__(
+        self, pri: int, entry: int, cmdid: Tcmdid, tags: Tags = [], procname=None
+    ) -> None:
         self.pri = pri
         self.entry = entry
         self.cmdid = cmdid
         self.tags = tags
+        self.procname = procname
 
     def then(self, onresult: _ResultCallback) -> CommandHandle[Tcmdid, Tres]:
         self.onresult = onresult
@@ -69,7 +72,7 @@ class CommandHandle(Generic[Tcmdid, Tres]):
         return self.pri < lhs.pri if self.pri != lhs.pri else self.entry < lhs.entry
 
     def __repr__(self) -> str:
-        return f"""{type(self.cmdid).__module__}<{self.cmdid} order={(self.pri, self.entry)} tags={self.tags} tid={threading.current_thread().name}>"""
+        return f"""{self.procname}::{self.cmdid} order={(self.pri, self.entry)} tags={self.tags} tid={threading.current_thread().name}"""
 
 
 class Command(Protocol[Tcmdid, Tcxt, Tres]):
@@ -82,14 +85,16 @@ class Command(Protocol[Tcmdid, Tcxt, Tres]):
                 try:
                     hcmd.onresult(result, hcmd.tags)
                 except Exception as ex:
-                    raise ResultCallbackError from ex
+                    raise ResultCallbackError(ex) from ex
         except Exception as ex:
             if not hcmd.onerror or hcmd.onerror(CmdProcError(ex), hcmd.tags):
                 raise CmdProcError(ex) from ex
 
     @classmethod
-    def get_handle(cls, pri: int, entry: int, tags: Tags) -> CommandHandle[Tcmdid, Tres]:
-        return CommandHandle(pri, entry, cls.cmdId, tags)
+    def get_handle(
+        cls, pri: int, entry: int, tags: Tags = [], procname: Optional[str] = None
+    ) -> CommandHandle[Tcmdid, Tres]:
+        return CommandHandle(pri, entry, cls.cmdId, tags, procname)
 
     @abstractmethod
     def exec(self, hcmd: CommandHandle[Tcmdid, Tres], cxt: Tcxt) -> Tres:
