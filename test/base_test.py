@@ -2,13 +2,14 @@ import re
 from typing import Any, Container
 
 import pytest
+
 from cmdq.base import Command, CommandHandle, _DefaultErrorCallback
 from cmdq.exceptions import CmdProcError
 
 
 class Test_DefaultErrorCallback:
     def test_returns_true(self):
-        x = _DefaultErrorCallback()  # type:ignore reportPrivateUsage
+        x = _DefaultErrorCallback()  # type:ignore
         assert x(Exception())
 
 
@@ -35,7 +36,7 @@ class Test_CommandHandle:
             return None
 
         # default error callback
-        assert isinstance(x.onerror, _DefaultErrorCallback)  # type:ignore reportPrivateUsage
+        assert isinstance(x.onerror, _DefaultErrorCallback)  # type:ignore
 
         y = x.or_err(_errcb)
 
@@ -46,7 +47,7 @@ class Test_CommandHandle:
         y = y.or_err(None)
 
         # resets to default error callback
-        assert isinstance(y.onerror, _DefaultErrorCallback)  # type:ignore reportPrivateUsage
+        assert isinstance(y.onerror, _DefaultErrorCallback)  # type:ignore
 
     def test_lt(self):
         x = CommandHandle[int, int](0, 0, 0)

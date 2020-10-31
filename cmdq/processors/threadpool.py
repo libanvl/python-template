@@ -26,16 +26,17 @@ class _ControlCommandHandle(CommandHandle[_Control, None]):
     pass
 
 
-class Processor(CommandProcessor[T, U]):
-    _Entry = Union[
-        Tuple[CommandHandle[T, Any], Command[T, U, Any]], Tuple[CommandHandle[_Control, None], Any]
-    ]
+_Entry = Union[
+    Tuple[CommandHandle[T, Any], Command[T, U, Any]], Tuple[CommandHandle[_Control, None], Any]
+]
 
+
+class Processor(CommandProcessor[T, U]):
     def __init__(self, name: str, cxt: U):
         self._name = name
         self._cxt = cxt
         self._entry = 1
-        self._q: PriorityQueue[Processor._Entry] = PriorityQueue()
+        self._q: PriorityQueue[_Entry] = PriorityQueue()
         self._qevent = threading.Event()
         self._qexecutor = ThreadPoolExecutor(thread_name_prefix=name)
         self._qtask = self._qexecutor.submit(self._consume)
