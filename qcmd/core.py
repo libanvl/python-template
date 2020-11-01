@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
-from abc import abstractclassmethod, abstractmethod
+from abc import abstractmethod
 from types import TracebackType
 from typing import (
     Any,
@@ -18,11 +18,16 @@ from typing import (
     TypeVar,
 )
 
-from cmdq.exceptions import CmdProcError, ResultCallbackError
+from qcmd.exceptions import CmdProcError, ResultCallbackError
 
-Tcmdid = TypeVar("Tcmdid")
-Tcxt_con = TypeVar("Tcxt_con", contravariant=True)
-Tres = TypeVar("Tres")
+I = TypeVar("I")
+I.__doc__ = "CommandId: I"
+
+X = TypeVar("X")
+X.__doc__ = "Context: X"
+
+R = TypeVar("R")
+R.__doc__ = "Result: R"
 
 Tags = Container[Any]
 
@@ -45,42 +50,36 @@ class _DefaultErrorCallback(ErrorCallback):
     pass
 
 
-_ResultCallback = Callable[[Tres, Tags], Optional[Any]]
-
-
-class CommandHandle(Generic[Tcmdid, Tres]):
-
-    onresult: Optional[_ResultCallback] = None
+class CommandHandle(Generic[I, R]):
+    onresult: Optional[Callable[[R, Tags], None]] = None
     onerror: ErrorCallback = _DefaultErrorCallback()
 
-    def __init__(
-        self, pri: int, entry: int, cmdid: Tcmdid, tags: Tags = [], procname=None
-    ) -> None:
+    def __init__(self, pri: int, entry: int, cmdid: I, tags: Tags = [], procname=None) -> None:
         self.pri = pri
         self.entry = entry
         self.cmdid = cmdid
         self.tags = tags
         self.procname = procname
 
-    def then(self, onresult: _ResultCallback) -> CommandHandle[Tcmdid, Tres]:
+    def then(self, onresult: Callable[[R, Tags], None]) -> CommandHandle[I, R]:
         self.onresult = onresult
         return self
 
-    def or_err(self, onerror: Optional[ErrorCallback]) -> CommandHandle[Tcmdid, Tres]:
+    def or_err(self, onerror: Optional[ErrorCallback]) -> CommandHandle[I, R]:
         self.onerror = onerror or _DefaultErrorCallback()
         return self
 
-    def __lt__(self, lhs: CommandHandle[Tcmdid, Tres]) -> bool:
+    def __lt__(self, lhs: CommandHandle[I, R]) -> bool:
         return self.pri < lhs.pri if self.pri != lhs.pri else self.entry < lhs.entry
 
     def __repr__(self) -> str:
         return f"""{self.procname}::{self.cmdid} order={(self.pri, self.entry)} tags={self.tags} tid={threading.current_thread().name}"""
 
 
-class Command(Protocol[Tcmdid, Tcxt_con, Tres]):
-    cmdId: ClassVar[Tcmdid]
+class Command(Generic[I, X, R]):
+    cmdid: ClassVar[I]
 
-    def __call__(self, hcmd: CommandHandle[Tcmdid, Tres], cxt: Tcxt_con) -> None:
+    def __call__(self, hcmd: CommandHandle[I, R], cxt: X) -> None:
         try:
             result = self.exec(hcmd, cxt)
             if hcmd.onresult:
@@ -95,18 +94,15 @@ class Command(Protocol[Tcmdid, Tcxt_con, Tres]):
     @classmethod
     def get_handle(
         cls, pri: int, entry: int, tags: Tags = [], procname: Optional[str] = None
-    ) -> CommandHandle[Tcmdid, Tres]:
-        return CommandHandle(pri, entry, cls.cmdId, tags, procname)
+    ) -> CommandHandle[I, R]:
+        return CommandHandle(pri, entry, cls.cmdid, tags, procname)
 
     @abstractmethod
-    def exec(self, hcmd: CommandHandle[Tcmdid, Tres], cxt: Tcxt_con) -> Tres:
+    def exec(self, hcmd: CommandHandle[I, R], cxt: X) -> R:
         raise NotImplementedError
 
 
-Tcxt_co = TypeVar("Tcxt_co", covariant=True)
-
-
-class CommandProcessor(Protocol[Tcmdid, Tcxt_co]):
+class CommandProcessor(Protocol[I, X]):
     def start(self) -> None:
         """Starts processing the command queue."""
 
@@ -132,28 +128,26 @@ class CommandProcessor(Protocol[Tcmdid, Tcxt_co]):
     def join(self) -> None:
         """Blocks until all currently queued commands are processed."""
 
-    def send(
-        self, cmd: Command[Tcmdid, Tcxt_co, Tres], pri: int = 50, tags: Tags = ()
-    ) -> CommandHandle[Tcmdid, Tres]:
-        """Send a commands to the queued for processing
+    def send(self, cmd: Command[I, X, R], pri: int = 50, tags: Tags = ()) -> CommandHandle[I, R]:
+        """Send a commands to the queue for processing
 
         Args:
-            cmd (Command[Tcmdid, Tcxt_co, Tres]): The command.
+            cmd (Command[I, R]): The command.
             pri (int, optional): The command priority. Lower priorities are processed first. Defaults to 50.
             tags (Tags, optional): A collection of tags for use by the consumer. Defaults to ().
 
         Returns:
-            CommandHandle[Tcmdid, Tres]: A handle that represents the command.
+            CommandHandle[I, R]: A handle that represents the command.
         """
 
 
-class CommandProcessorHandle(ContextManager[CommandProcessor[Tcmdid, Tcxt_con]]):
-    instance: CommandProcessor[Tcmdid, Tcxt_con]
+class CommandProcessorFactory(ContextManager[CommandProcessor[I, X]]):
+    instance: CommandProcessor[I, X]
 
-    def __init__(self, cxt: Tcxt_con) -> None:
-        self.instance = self.factory(cxt)
+    def __init__(self, cxt: X) -> None:
+        self.instance = self.create(cxt)
 
-    def __enter__(self) -> CommandProcessor[Tcmdid, Tcxt_con]:
+    def __enter__(self) -> CommandProcessor[I, X]:
         self.instance.start()
         return self.instance
 
@@ -166,6 +160,6 @@ class CommandProcessorHandle(ContextManager[CommandProcessor[Tcmdid, Tcxt_con]])
         self.instance.halt()
         return None
 
-    @abstractclassmethod
-    def factory(cls, cxt: Tcxt_con) -> CommandProcessor[Tcmdid, Tcxt_con]:
+    @abstractmethod
+    def create(self, cxt: X) -> CommandProcessor[I, X]:
         raise NotImplementedError()

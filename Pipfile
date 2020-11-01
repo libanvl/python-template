@@ -7,7 +7,7 @@ verify_ssl = true
 black = "*"
 isort = "*"
 flake8 = "*"
-mypy = "*"
+nodeenv = "*"
 pytest = "*"
 pytest-cov = "*"
 pre-commit = "*"
@@ -18,4 +18,8 @@ python_version = "3.8"
 [pipenv]
 allow_prereleases = true
 
-[packages]
+[scripts]
+pyright = "node node_modules/pyright"
+pre-commit-check = "pre-commit run --all-files"
+pytest = "python -m pytest"
+pytest-cov = "python -m pytest --cov"

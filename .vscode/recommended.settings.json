@@ -1,0 +1,7 @@
+{
+    "python.pythonPath": "/home/{user}/{path-to-virtualenv}/bin/python",
+    "python.formatting.provider": "black",
+    "python.linting.flake8Enabled": true,
+    "python.languageServer": "Pylance",
+    "python.terminal.activateEnvironment": false
+}

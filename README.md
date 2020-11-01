@@ -1,6 +1,6 @@
-![CI](https://github.com/libanvl/python-cmdq/workflows/CI/badge.svg)
+![CI](https://github.com/libanvl/python-qcmd/workflows/CI/badge.svg)
 
-# python-cmdq
+# python-qcmd
 Synchronous threadpool command queueing for Python 3.8
 
 # Developing

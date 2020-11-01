@@ -1,6 +1,6 @@
 [run]
-source = cmdq
-omit = cmdq/__main__.py
+source = qcmd
+omit = qcmd/__main__.py
 
 [report]
 exclude_lines =

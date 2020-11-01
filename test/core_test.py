@@ -3,8 +3,8 @@ from typing import Any, Container
 
 import pytest
 
-from cmdq.base import Command, CommandHandle, _DefaultErrorCallback
-from cmdq.exceptions import CmdProcError
+from qcmd.core import Command, CommandHandle, _DefaultErrorCallback
+from qcmd.exceptions import CmdProcError
 
 
 class Test_DefaultErrorCallback:
@@ -72,12 +72,12 @@ class Test_Command:
                 return 0
 
         x = _TestCommand()
-        with pytest.raises(AttributeError, match=re.compile(".*cmdId.*")):
+        with pytest.raises(AttributeError, match=re.compile(".*cmdid.*")):
             x.get_handle(0, 0, [])
 
     def test_resultcallback(self):
         class _TestCommand(Command[int, None, int]):
-            cmdId = 0
+            cmdid = 0
 
             def exec(self, hcmd: CommandHandle[int, int], cxt: None) -> int:
                 return 1
@@ -90,10 +90,9 @@ class Test_Command:
 
         rcb_exec = False
 
-        def _resultcb(res: int, tags: Container[Any]) -> int:
+        def _resultcb(res: int, tags: Container[Any]) -> None:
             nonlocal rcb_exec
             rcb_exec = True
-            return 0
 
         hcmd.then(_resultcb)
         cmd(hcmd, None)
@@ -101,7 +100,7 @@ class Test_Command:
         # result callback is executed
         assert rcb_exec
 
-        def _raisescb(res: int, tags: Container[Any]) -> int:
+        def _raisescb(res: int, tags: Container[Any]) -> None:
             raise Exception("test-value")
 
         hcmd.then(_raisescb)

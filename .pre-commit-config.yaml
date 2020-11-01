@@ -23,13 +23,11 @@ repos:
         types: [python]
         exclude: setup.py
 
-      - id: mypy
-        name: mypy
+      - id: pyright
+        name: pyright
         stages: [commit]
         language: system
-        entry: pipenv run mypy
-        types: [python]
-        require_serial: true
+        entry: pipenv run pyright --lib -p pyrightconfig.json --stats
 
       - id: pytest
         name: pytest
