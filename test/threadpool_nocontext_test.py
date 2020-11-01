@@ -41,7 +41,7 @@ class Cmd:
 
 
 def test_sample_simple():
-    with ThreadPoolExecutor(2, thread_name_prefix="Sample") as executor:
+    with ThreadPoolExecutor(1, thread_name_prefix="Sample") as executor:
         with SampleProcessorFactory(executor=executor, name="Sample", cxt=None) as sp:
             # the context manager starts the processor automatically
             assert not sp.paused()
