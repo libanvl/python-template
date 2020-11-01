@@ -32,7 +32,7 @@ jobs:
           python --version ; pip --version ; pipenv --version 
 
       - name: Install dependencies
-        run: init.sh
+        run: ./init.sh
           
       - name: Run pre-commit
         run: pipenv run pre-commit run --all-files
