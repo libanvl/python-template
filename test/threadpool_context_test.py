@@ -15,6 +15,7 @@ X = int
 _SampleCommand = ep.Command[CommandId, X, int]
 SampleCommandHandle = ep.CommandHandle[CommandId, int]
 SampleProcessorFactory = ep.ProcessorFactory[CommandId, X]
+SampleProcessorFactory.procname = "SampleProc"
 
 R = int
 
@@ -44,7 +45,7 @@ class Cmd:
 def test_sample_context_simple():
     cxt = 5
     with ThreadPoolExecutor(1, thread_name_prefix="Sample") as executor:
-        with SampleProcessorFactory(executor=executor, name="Sample", cxt=cxt) as sp:
+        with SampleProcessorFactory(executor=executor, cxt=cxt) as sp:
             # the context manager starts the processor automatically
             assert not sp.paused()
 

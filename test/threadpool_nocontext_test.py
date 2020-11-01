@@ -14,6 +14,7 @@ class CommandId(enum.Enum):
 _SampleCommand = ep.Command[CommandId, Any, int]
 SampleCommandHandle = ep.CommandHandle[CommandId, int]
 SampleProcessorFactory = ep.ProcessorFactory[CommandId, Any]
+SampleProcessorFactory.procname = "SampleProcNoCxt"
 
 R = int
 
@@ -42,7 +43,7 @@ class Cmd:
 
 def test_sample_simple():
     with ThreadPoolExecutor(1, thread_name_prefix="Sample") as executor:
-        with SampleProcessorFactory(executor=executor, name="Sample", cxt=None) as sp:
+        with SampleProcessorFactory(executor=executor, cxt=None) as sp:
             # the context manager starts the processor automatically
             assert not sp.paused()
 

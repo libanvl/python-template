@@ -2,7 +2,7 @@ import concurrent.futures as conc
 import enum
 import threading
 from queue import PriorityQueue
-from typing import Tuple, TypeVar, Union
+from typing import ClassVar, Tuple, TypeVar, Union
 
 import qcmd.core as core
 
@@ -88,10 +88,11 @@ class Processor(core.CommandProcessor[I, X]):
 
 
 class ProcessorFactory(core.CommandProcessorFactory[I, X]):
-    def __init__(self, executor: conc.Executor, cxt: X, name: str = "Proc"):
+    procname: ClassVar[str] = "Proc"
+
+    def __init__(self, executor: conc.Executor, cxt: X):
         self._executor = executor
-        self._name = name
         super().__init__(cxt)
 
     def create(self, cxt: X) -> Processor[I, X]:
-        return Processor(self._name, self._executor, cxt)
+        return Processor(self.procname, self._executor, cxt)
