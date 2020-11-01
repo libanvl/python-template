@@ -1,4 +1,5 @@
 ![CI](https://github.com/libanvl/python-qcmd/workflows/CI/badge.svg)
+![PyPi](https://github.com/libanvl/python-qcmd/workflows/Upload%20Python%20Package/badge.svg?event=release)
 
 # python-qcmd
 Synchronous threadpool command queueing for Python 3.8
