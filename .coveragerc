@@ -1,6 +1,6 @@
 [run]
-source = qcmd
-omit = qcmd/__main__.py
+source = pkg
+omit = pkg/__main__.py
 
 [report]
 exclude_lines =

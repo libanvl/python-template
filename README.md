@@ -1,10 +1,10 @@
-![CI](https://github.com/libanvl/python-qcmd/workflows/CI/badge.svg)
-![PyPi](https://github.com/libanvl/python-qcmd/workflows/Upload%20Python%20Package/badge.svg?event=release)
+![CI](https://github.com/libanvl/python-{pkg}/workflows/CI/badge.svg)
 
-# python-qcmd
-Synchronous threadpool command queueing for Python 3.8
+# python-pkg
+Description
 
 # Developing
+
 ## Install pipx if pipenv is not installed
 python3 -m pip install pipx
 python3 -m pipx ensurepath
